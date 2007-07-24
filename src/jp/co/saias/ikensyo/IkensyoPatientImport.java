@@ -90,7 +90,7 @@ public class IkensyoPatientImport {
       String realInPath=null;
       if (dbPath0==null) {
         fr = (parent!=null) ? new JDialog(parent) : new JDialog();
-        fr.setTitle("医見書Ver2.5 患者データユーティリティ");
+        fr.setTitle("医見書 患者データユーティリティ");
 
         if (!checkDBPath(dbPath)) {
            cancel(); 
@@ -106,7 +106,7 @@ public class IkensyoPatientImport {
         oTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
         oTable.setSelectable(false);
         if (oTable.Rows<0) {
-          statMessage(STATE_ERROR,"医見書データベースに接続できません。\n医見書Ver2.5 が正常に起動する状態かどうかご確認ください。");
+          statMessage(STATE_ERROR,"医見書データベースに接続できません。\n医見書 が正常に起動する状態かどうかご確認ください。");
           return null;
         }
 
@@ -133,10 +133,12 @@ public class IkensyoPatientImport {
 
         if (iTable.Rows<0) {
           statMessage(STATE_ERROR,"取り込み元データベースに接続できません。\nデータベースファイルのアクセス権をご確認ください。");
+          if (isMbInPath) new File(dbPath0).delete();
           return null;
         }
           if (iTable.Rows==0) {
             statMessage(STATE_ERROR,"選択したファイルは患者データが存在しないか、または、医見書の正しいデータベースではありません。");
+          if (isMbInPath) new File(dbPath0).delete();
             continue;
           }
           kstat = true;
@@ -191,7 +193,7 @@ public class IkensyoPatientImport {
         //    "取り込み方法の選択"
         //  )
         //);
-        JLabel title = new JLabel(" 医見書Ver2.5 患者別データの取り込み");
+        JLabel title = new JLabel(" 医見書 患者別データの取り込み");
         title.setFont(new Font("SansSerif",Font.BOLD,18));
         JLabel choi = new JLabel("取り込み方法の選択：");
         choi.setFont(new Font("Dialog",Font.PLAIN,12));
@@ -262,7 +264,7 @@ public class IkensyoPatientImport {
     public boolean checkDBPath(String path) {
       File dbf = new File(path);
       if (!dbf.exists()) {
-          statMessage(STATE_ERROR,"データベースが見つかりません。\n医見書Ver2.5を起動して正しくデータベースファイルが設定されているかご確認下さい。");
+          statMessage(STATE_ERROR,"データベースが見つかりません。\n医見書を起動して正しくデータベースファイルが設定されているかご確認下さい。");
         return false;
       }
       return true;
@@ -323,7 +325,7 @@ public class IkensyoPatientImport {
       String ppath;
       File pf = new File("IkensyoProperityXML.xml");
       if (!pf.exists()) {
-        statMessage(STATE_ERROR, "医見書Ver2.5の設定ファイル(IkensyoProperityXML.xml)が見つかりません。\n「了解(OK)」を押して終了させ、このプログラムを医見書Ver2.5のインストールディレクトリ(Ikensyo2.5フォルダ)\nに配置してから実行して下さい。");
+        statMessage(STATE_ERROR, "医見書の設定ファイル(IkensyoProperityXML.xml)が見つかりません。\n「了解(OK)」を押して終了させ、このプログラムを医見書のインストールディレクトリ(Ikensyo2.5フォルダ)\nに配置してから実行して下さい。");
         System.exit(1);
       }
       if (pf==null) System.exit(1);

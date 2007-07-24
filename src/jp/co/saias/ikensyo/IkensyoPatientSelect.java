@@ -45,13 +45,21 @@ public class IkensyoPatientSelect {
       fieldName.addElement("意見書記入日");
       fieldName.addElement("指示書記入日");
       fieldName.addElement("最終更新日");
-      fieldName.addElement("");
+      fieldName.addElement("生年月日");
+      fieldName.addElement("ふりがな");
+      fieldName.addElement("郵便番号");
+      fieldName.addElement("住所");
+      fieldName.addElement("電話1");
+      fieldName.addElement("電話2");
+      fieldName.addElement("更新日");
       dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
       StringBuffer buf = new StringBuffer();
       buf.append("select PATIENT.PATIENT_NO,PATIENT.CHART_NO,");
-      buf.append("  PATIENT.PATIENT_NM,PATIENT.SEX,PATIENT.BIRTHDAY,");
-      buf.append("  IKN_ORIGIN.KINYU_DT,SIS_ORIGIN.KINYU_DT,");
-      buf.append("  PATIENT.KOUSIN_DT,PATIENT.BIRTHDAY,PATIENT.PATIENT_KN ");
+      buf.append(" PATIENT.PATIENT_NM,PATIENT.SEX,PATIENT.BIRTHDAY,");
+      buf.append(" IKN_ORIGIN.KINYU_DT,SIS_ORIGIN.KINYU_DT,");
+      buf.append(" PATIENT.KOUSIN_DT,PATIENT.BIRTHDAY,PATIENT.PATIENT_KN,");
+      buf.append(" PATIENT.POST_CD,PATIENT.ADDRESS,PATIENT.TEL1,PATIENT.TEL2,");
+      buf.append(" PATIENT.KOUSIN_DT ");
       buf.append("from PATIENT ");
       buf.append("left outer join IKN_ORIGIN ");
       buf.append("     on (PATIENT.PATIENT_NO=IKN_ORIGIN.PATIENT_NO");
@@ -69,15 +77,15 @@ public class IkensyoPatientSelect {
         dbm.execQuery(sql);
         dbm.Close();
         Rows = dbm.Rows;
-        Object data[][] = new Object[9][Rows];
+        Object data[][] = new Object[15][Rows];
         for (int i=0;i<Rows;i++) {
-          for (int j=0;j<9;j++) {
+          for (int j=0;j<15;j++) {
             data[j][i] = dbm.getData(j,i);
           }
         }
         for (int j=0;j<Rows;j++) {
           Vector rdat = new Vector();
-          for (int i=0;i<9;i++) {
+          for (int i=0;i<15;i++) {
             if (i==4) {
               String str;
               Integer age;
@@ -101,7 +109,7 @@ public class IkensyoPatientSelect {
               }
             }
           }
-          rdat.addElement(data[4][j].toString());
+          //rdat.addElement(data[4][j].toString());
           this.data.addElement(rdat);
         }
       }
@@ -135,10 +143,59 @@ public class IkensyoPatientSelect {
       for (int i=0;i<usrTbl.getRowCount();i++) {
         if (pno==Integer.parseInt((usrTbl.getValueAt(i,0)).toString())) {
           dat.addElement(new Integer(nno));
-          for (int j=1;j<9;j++) {
+          for (int j=1;j<15;j++) {
              dat.addElement(usrTbl.getValueAt(i,j));
           }
           return dat;
+        }
+      }
+      return null;
+    }
+
+    public String getPatientBasicDataCsv(int pno) {
+      StringBuffer csvRecord;
+      for (int i=0;i<usrTbl.getRowCount();i++) {
+        if (pno==Integer.parseInt((usrTbl.getValueAt(i,0)).toString())) {
+             csvRecord = new StringBuffer();
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,1).toString().replaceAll("\"","\"\""));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,2).toString().replaceAll("\"","\"\""));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,9).toString().replaceAll("\"","\"\""));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,3).toString().replaceAll(" +",""));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,8));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,4));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,10));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,11).toString().replaceAll("\"","\"\""));
+             csvRecord.append("\"");
+             csvRecord.append(",");
+             csvRecord.append("\"");
+             csvRecord.append(usrTbl.getValueAt(i,12));
+             //if (Pattern.compile("[0-9]+").matcher(usrTbl.getValueAt(i,12).toString()).find()) csvRecord.append("-");
+             csvRecord.append("-");
+             csvRecord.append(usrTbl.getValueAt(i,13));
+             csvRecord.append("\"");
+          return csvRecord.toString();
         }
       }
       return null;
@@ -190,28 +247,76 @@ public class IkensyoPatientSelect {
       return dsql;
     }
 
+//  public String getPatientBasicDataSql(int pno) {
+//    String sql = "select * from PATIENT where PATIENT_NO="+pno;
+//    if (!dbm.connect()) return "CON0";
+//    dbm.execQuery(sql);
+//    dbm.Close();
+//    if (dbm.Rows<1) return null;
+//    Object dat[] = dbm.fetchRow();
+//    Object fieldName[] = dbm.getFieldNames();
+//    StringBuffer sb = new StringBuffer();
+//    sb.append("insert into PATIENT (");
+//    for (int i=1;i<fieldName.length;i++) {
+//      if (i>1) sb.append(",");
+//      sb.append(fieldName[i].toString());
+//    }
+//    sb.append(") values (");  
+//    for (int i=1;i<fieldName.length-1;i++) {
+//      if (i>1) sb.append(",");
+//      if (dat[i]!=null) sb.append("'");
+//      sb.append(dat[i]);
+//      if (dat[i]!=null) sb.append("'");
+//    }
+//    sb.append(",CURRENT_TIME)");
+//    return sb.toString();
+//  }
+
     public String getPatientBasicDataSql(int pno) {
-      String sql = "select * from PATIENT where PATIENT_NO="+pno;
-      if (!dbm.connect()) return "CON0";
-      dbm.execQuery(sql);
-      dbm.Close();
-      if (dbm.Rows<1) return null;
-      Object dat[] = dbm.fetchRow();
-      Object fieldName[] = dbm.getFieldNames();
+      Vector dat=getPatientByPno(pno,pno);
+      if (dat==null) return null;
+      String fieldName[] = {"PATIENT_NO",
+                            "CHART_NO",
+                            "PATIENT_NM",
+                            "SEX",
+                            "AGE",
+                            "","","",
+                            "BIRTHDAY",
+                            "PATIENT_KN",
+                            "POST_CD",
+                            "ADDRESS",
+                            "TEL1",
+                            "TEL2",
+                            "KOUSIN_DT",
+                            "LAST_TIME"};
+                           
       StringBuffer sb = new StringBuffer();
       sb.append("insert into PATIENT (");
       for (int i=1;i<fieldName.length;i++) {
+        if (fieldName[i]=="") continue;
         if (i>1) sb.append(",");
-        sb.append(fieldName[i].toString());
+        sb.append(fieldName[i]);
       }
       sb.append(") values (");  
-      for (int i=1;i<fieldName.length-1;i++) {
-        if (i>1) sb.append(",");
-        if (dat[i]!=null) sb.append("'");
-        sb.append(dat[i]);
-        if (dat[i]!=null) sb.append("'");
+      for (int i=1;i<dat.size();i++) {
+        if (fieldName[i]=="") continue;
+        String male = new String("男");
+        String wk;
+        switch (i) {
+          case 3: String v=dat.elementAt(i).toString();
+                  wk=(v.indexOf(male)>=0) ? "1":"2";
+                  break;
+          case 8: wk = dat.elementAt(i).toString().replaceAll("/","-");
+                  break;
+          default: wk = dat.elementAt(i).toString();
+        }
+          if (i>1) sb.append(",");
+          if (wk!=null && wk.length()>0) sb.append("'");
+          sb.append((wk!=null && wk.length()>0) ? wk:"null");
+          if (wk!=null && wk.length()>0) sb.append("'");
       }
-      sb.append(",CURRENT_TIME)");
+      sb.append(",CURRENT_TIMESTAMP)");
+      //System.out.println(sb);
       return sb.toString();
     }
 
@@ -274,15 +379,80 @@ public class IkensyoPatientSelect {
 	if (!isSelectable) usrTbl.setCellSelectionEnabled(isSelectable);
         usrTbl.getColumnModel().getColumn(0).setMinWidth(0);
         usrTbl.getColumnModel().getColumn(0).setMaxWidth(0);
-        usrTbl.getColumnModel().getColumn(1).setPreferredWidth(60);
+        usrTbl.getColumnModel().getColumn(1).setPreferredWidth(100);
         usrTbl.getColumnModel().getColumn(2).setPreferredWidth(120);
-        usrTbl.getColumnModel().getColumn(3).setPreferredWidth(50);
-        usrTbl.getColumnModel().getColumn(4).setPreferredWidth(50);
+        usrTbl.getColumnModel().getColumn(3).setPreferredWidth(45);
+        usrTbl.getColumnModel().getColumn(4).setPreferredWidth(45);
         usrTbl.getColumnModel().getColumn(5).setPreferredWidth(100);
         usrTbl.getColumnModel().getColumn(6).setPreferredWidth(100);
-        usrTbl.getColumnModel().getColumn(7).setPreferredWidth(150);
+        usrTbl.getColumnModel().getColumn(7).setPreferredWidth(140);
         usrTbl.getColumnModel().getColumn(8).setMinWidth(0);
         usrTbl.getColumnModel().getColumn(8).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(9).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(9).setMaxWidth(0);
+        //usrTbl.getColumnModel().getColumn(10).setPreferredWidth(50);
+        usrTbl.getColumnModel().getColumn(10).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(10).setMaxWidth(0);
+        //usrTbl.getColumnModel().getColumn(11).setPreferredWidth(100);
+        usrTbl.getColumnModel().getColumn(11).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(11).setMaxWidth(0);
+        //usrTbl.getColumnModel().getColumn(12).setPreferredWidth(50);
+        usrTbl.getColumnModel().getColumn(12).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(12).setMaxWidth(0);
+        //usrTbl.getColumnModel().getColumn(13).setPreferredWidth(50);
+        usrTbl.getColumnModel().getColumn(13).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(13).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(14).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(14).setMaxWidth(0);
+        usrTbl.getTableHeader().setReorderingAllowed(false);
+        JScrollPane scrPane = new JScrollPane();
+        scrPane.getViewport().setView(usrTbl);
+        scrPane.setFont(new Font("san-serif",Font.PLAIN,14));
+	scrPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+	scrPane.getHorizontalScrollBar();
+	scrPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+	scrPane.getVerticalScrollBar();
+	return scrPane;
+    }
+
+    public JScrollPane getPatientList() {
+        dtm = new DefaultTableModel(data, fieldName);
+        sorter = new TableSorter2(dtm);
+        usrTbl = new JTable(sorter);
+        sorter.setTableHeader(usrTbl.getTableHeader());
+        sorter.setCellEditableAll(false);
+        sorter.setColumnClass(4,Integer.class);
+        //sorter.setPrimaryKeyCol(0);
+        //sorter.addMouseListenerToHeaderInTable(usrTbl);
+	usrTbl.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+	usrTbl.setRowSelectionAllowed(true);
+	usrTbl.setDefaultEditor(Object.class, null);
+        usrTbl.setShowGrid(false);
+	if (!isSelectable) usrTbl.setCellSelectionEnabled(isSelectable);
+        usrTbl.getColumnModel().getColumn(0).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(0).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(1).setPreferredWidth(100);
+        usrTbl.getColumnModel().getColumn(2).setPreferredWidth(120);
+        usrTbl.getColumnModel().getColumn(3).setPreferredWidth(45);
+        usrTbl.getColumnModel().getColumn(4).setPreferredWidth(45);
+        usrTbl.getColumnModel().getColumn(5).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(5).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(6).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(6).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(7).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(7).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(8).setPreferredWidth(85);
+        usrTbl.getColumnModel().getColumn(9).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(9).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(10).setPreferredWidth(75);
+        usrTbl.getColumnModel().getColumn(11).setPreferredWidth(205);
+        usrTbl.getColumnModel().getColumn(12).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(12).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(13).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(13).setMaxWidth(0);
+        usrTbl.getColumnModel().getColumn(14).setMinWidth(0);
+        usrTbl.getColumnModel().getColumn(14).setMaxWidth(0);
+
         usrTbl.getTableHeader().setReorderingAllowed(false);
         JScrollPane scrPane = new JScrollPane();
         scrPane.getViewport().setView(usrTbl);
@@ -332,3 +502,4 @@ public class IkensyoPatientSelect {
     }
 
 }
+

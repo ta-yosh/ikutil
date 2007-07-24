@@ -18,7 +18,7 @@ public class DngFileUtil {
     if (ost.equals("Win"))  fileCopy2(src,dest);
     else if (ost.equals("Fre")) fileCopy3(src,dest);
     else if (ost.equals("Lin")) fileCopy3(src,dest);
-    else if (ost.equals("Mac")) fileCopy2(src,dest);
+    else if (ost.equals("Mac")) fileCopy3(src,dest);
     else fileCopy2(src,dest);
     }
     catch (Exception e) {
@@ -89,11 +89,12 @@ public class DngFileUtil {
     }
   }
   
-  private void fileCopy3(String src, String dest) {
+  private void fileCopy3(String src, String dest) throws IOException {
     try {
       Runtime runtime = Runtime.getRuntime();
       Process process = runtime.exec("cp -p "+src+" "+dest);
       int tmpI = process.waitFor();
+      //System.out.println(tmpI);
     } catch (Exception e) {
       System.out.println(e.toString());
     }
@@ -135,7 +136,8 @@ public class DngFileUtil {
 
   public void chMod(String modStr,String fPath) {
     String ost = System.getProperty("os.name").substring(0,3);
-    if (ost.equals("Win") || ost.equals("Mac")) return;
+    //if (ost.equals("Win") || ost.equals("Mac")) return;
+    if (ost.equals("Win")) return;
 
     String execStr = "chmod "+modStr+" "+fPath;
     try {

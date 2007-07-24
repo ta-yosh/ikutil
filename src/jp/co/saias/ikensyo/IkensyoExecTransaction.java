@@ -44,6 +44,10 @@ public class IkensyoExecTransaction extends Thread {
       progressBar = bar;
       pfile = pFile; 
     }
+    public IkensyoExecTransaction(int total,JProgressBar bar) {
+      count = total;
+      progressBar = bar;
+    }
 
     public void setTable(IkensyoPatientSelect iTable,IkensyoPatientSelect oTable) {
       this.iTable=iTable;
@@ -53,6 +57,8 @@ public class IkensyoExecTransaction extends Thread {
     public void run() {
       isStarted = true;
       stat = STATE_SUCCESS;
+      DngDBAccess dbm=null; 
+      FileWriter fos=null;
       try {
         synchronized(this) {
           while(!runStat0) wait();
@@ -63,6 +69,7 @@ public class IkensyoExecTransaction extends Thread {
          return;
       }
       int lcount = 0;
+      if (pfile!=null) {
         DngAppProperty props = new DngAppProperty(pfile); 
         String dbPort = props.getProperty("DBConfig/Port");
         String dbUser = props.getProperty("DBConfig/UserName");
@@ -70,38 +77,50 @@ public class IkensyoExecTransaction extends Thread {
         String dbPath = (oTable==null) ? dbOutPath:props.getProperty("DBConfig/Path");
         String dbServer = props.getProperty("DBConfig/Server");
         String dbUri = dbServer+"/"+dbPort+":"+dbPath;
-        DngDBAccess dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
+        dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
         if (!dbm.connect()) {
           stat = STATE_FATAL;
           errMessage = "データベースに接続できません。\nDB:"+dbUri;
           interrupt();
           return;
         }
-        for (int i=0;i<pNos.length;i++) {
-          try {
-            sleep(0);
-            synchronized(this) {
-              while(!runStat) wait();
-            }
-          } catch(InterruptedException ie) {
-            stat = STATE_CANCEL;
-            System.out.println("Interrupted exec");
-            break;
+      }
+      else {
+        try{
+          fos = new FileWriter( dbOutPath );
+        } catch (IOException e) {
+          errMessage = "ファイルをオープンできません。 \nFile:"+dbOutPath;
+          interrupt();
+          return;
+        }
+      }
+      for (int i=0;i<pNos.length;i++) {
+        try {
+          sleep(0);
+          synchronized(this) {
+            while(!runStat) wait();
           }
-          if (stat == STATE_CANCEL) break;
-          if (stat==STATE_SUCCESS) {
-            String sql;
-            String bsql=null;
-            do {
-              bsql = iTable.getPatientBasicDataSql(pNos[i][0]);
-              if (bsql.equals("CON0")) {
-                System.out.println("DB server has been busy. I try to connect again 20sec. after.... please wait.");
-                try {sleep(20000);} catch(Exception ie){};
-              }
-            } while (bsql.equals("CON0"));
-            //System.out.println(bsql);
-            int dNum[]=null;
-            int patientNo=0;
+        } catch(InterruptedException ie) {
+          stat = STATE_CANCEL;
+          System.out.println("Interrupted exec");
+          break;
+        }
+        if (stat == STATE_CANCEL) break;
+        if (stat==STATE_SUCCESS) {
+          String sql;
+          String bsql=null;
+          do {
+            bsql = (pfile!=null) ? iTable.getPatientBasicDataSql(pNos[i][0]) :
+                             iTable.getPatientBasicDataCsv(pNos[i][0]);
+            if (bsql.equals("CON0")) {
+              System.out.println("DB server has been busy. I try to connect again 20sec. after.... please wait.");
+              try {sleep(20000);} catch(Exception ie){};
+            }
+          } while (bsql.equals("CON0"));
+          //System.out.println(bsql);
+          int dNum[]=null;
+          int patientNo=0;
+          if (pfile!=null) {
             String type[] = {"IKN_ORIGIN","IKN_BILL","SIS_ORIGIN","COMMON_IKN_SIS","PATIENT"};
             dbm.begin();
             if (pNos[i][1]!=0) {
@@ -144,30 +163,44 @@ public class IkensyoExecTransaction extends Thread {
               stat=STATE_ERROR;
               errSql=bsql;
             }
-            if (stat==STATE_SUCCESS) {
-              if (oTable!=null) {
-                dbm.commit();
-                if (dNum!=null) {
-                  oTable.removeRows(dNum);
-                }
-                oTable.addRow(iTable.getPatientByPno(pNos[i][0],patientNo));
-              }
-              progressBar.setValue(++lcount);
-              progressBar.setString(String.valueOf(lcount)+"/"+count+"件");
-            }
-            else {
-              errMessage = "取り込みデータに問題があります。";
-              dbm.rollback();
+          }
+          else {
+            try {
+            fos.write(bsql);
+            fos.write("\r\n");
+            } catch(IOException ex) {
+              stat=STATE_ERROR;
+              errMessage = "書き出し用CSVファイルに書き込めません。";
               break;
             }
           }
+          if (stat==STATE_SUCCESS) {
+            if (oTable!=null) {
+              dbm.commit();
+              if (dNum!=null) {
+                oTable.removeRows(dNum);
+              }
+              oTable.addRow(iTable.getPatientByPno(pNos[i][0],patientNo));
+            }
+            progressBar.setValue(++lcount);
+            progressBar.setString(String.valueOf(lcount)+"/"+count+"件");
+          }
+          else {
+            errMessage = "取り込みデータに問題があります。";
+            if (pfile!=null) { dbm.rollback();}
+            else { try{ fos.close();} catch(IOException ex){} }
+            break;
+          }
         }
-        if (oTable==null && stat>STATE_ERROR) dbm.commit();
-        else dbm.rollback();
-        runStat0 = false;
-        runStat1 = true;
-        dbm.Close();
+      }
+      if (pfile!=null && oTable==null && stat>STATE_ERROR) dbm.commit();
+      else if (pfile!=null) {dbm.rollback();}
+      runStat0 = false;
+      runStat1 = true;
+      if (pfile!=null) {dbm.Close();}
+      else { try{ fos.close();} catch(IOException ex){} }
     }
+
     synchronized public void pause() {
       if (runStat1) return;
       runStat = false;

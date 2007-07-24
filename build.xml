@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="euc-jp"?> 
 <project basedir="." default="compile" name="compileMain"> 
   <property name="SrcDir" value="src" /> 
-  <property name="ClassDir" value="bin" /> 
+  <property name="ClassDir" value="classes" /> 
   <property name="JarName" value="DBUtil.jar" /> 
   <target name="compile"> 
     <delete dir="${ClassDir}" /> 
     <mkdir dir="${ClassDir}" /> 
     <javac srcdir="src" destdir="${ClassDir}" nowarn="on"> 
       <include name="jp/co/saias/**/*" /> 
+      <exclude name="jp/co/saias/lib/DngPreviewHtml.java" /> 
     </javac> 
+    <copy todir="${ClassDir}">
+      <fileset dir="${SrcDir}">
+        <include name="jp/co/saias/ikensyo/icon/*" />
+      </fileset>
+    </copy>
     <delete file="${JarName}" /> 
     <jar jarfile="${JarName}" basedir="${ClassDir}"> 
       <include name="jp/co/saias/**/*" /> 
+      <include name="jp/co/saias/ikensyo/icon/*" /> 
       <manifest> 
         <attribute name="Main-Class" value="jp.co.saias.ikensyo.IkensyoDBUtilMain" /> 
         <attribute name="Class-Path" value=". lib/firebirdsql-full.jar" /> 

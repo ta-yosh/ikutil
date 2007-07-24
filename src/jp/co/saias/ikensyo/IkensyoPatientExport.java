@@ -64,7 +64,8 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
           String uri = dbServer + "/" + dbPort + ":" + dbPath;
           iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
           if (iTable.Rows<0) {
-            statMessage(STATE_ERROR,"データベースに接続できません。\n医見書Ver2.5が問題なく起動する状態かどうかご確認ください。");
+            statMessage(STATE_ERROR,"データベースに接続できません。\n医見書が問題なく起動する状態かどうかご確認ください。");
+            if (isMbInPath) new File(dbPath).delete();
             return null;
           }
           if (iTable.Rows==0) {
@@ -73,12 +74,14 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
                   "現在設定されているデータベースには患者データが存在しません。\n別のデータベースを選択しますか？",
                   "患者データ書き出し",JOptionPane.YES_NO_OPTION
                  )==JOptionPane.NO_OPTION) {
+                if (isMbInPath) new File(dbPath).delete();
                 runStat = STATE_COMPLETE;
                 fr.dispose();
                 dbexec.interrupt();
                 return null;
             }
             String origPath = dbPath;
+            if (isMbInPath) new File(dbPath).delete();
             dbPath = getImportDBPath(1); 
             realInPath = dbPath;
             if (dbPath==null) return null;
@@ -126,7 +129,7 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
       };
       exitBtn.addActionListener(exitNow);
 
-        JLabel title = new JLabel(" 医見書Ver2.5 患者別データの書き出し");
+        JLabel title = new JLabel(" 医見書 患者別データの書き出し");
         title.setFont(new Font("SansSerif",Font.BOLD,18));
         JPanel northP = new JPanel(new BorderLayout());
         northP.add(title,BorderLayout.NORTH);
@@ -232,7 +235,8 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
             if (JOptionPane.showConfirmDialog(fr,pn,"患者データ書き出し",JOptionPane.OK_CANCEL_OPTION,JOptionPane.INFORMATION_MESSAGE)==0) {
 
               File ofp = new File(dbOutPath);
-              if (ofp.exists()) new DngFileUtil().moveFile(dbOutPath,dbOutPath+".old");
+              //if (ofp.exists()) new DngFileUtil().moveFile(dbOutPath,dbOutPath+".old");
+              if (ofp.exists()) ofp.renameTo(new File(dbOutPath+".old"));
 
               if (isMbOutPath) {
                 realOutPath = dbOutPath;
@@ -463,10 +467,12 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
  
     public void finalizeExportDB() {
 
+      boolean is20 = false;
       String dbUser = getProperty("DBConfig/UserName");
       String dbPass = getProperty("DBConfig/Password");
-      String dbTmpPath = dbOutPath+".bak";
+      String dbTmpPath = dbOutPath+".fbak";
       String[] envp= new String[1];
+      String gbak;
 
       String cmd[] = new String[8];
       String quot = "";
@@ -491,7 +497,14 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
       }
       if (osn.equals("Win")) {
         quot = "\"";
-        cmd[0] = quot+cmd[0]+"\\Firebird\\Firebird_1_5\\bin\\gbak.exe"+quot;
+        gbak = cmd[0]+"\\Firebird\\Firebird_1_5\\bin\\gbak.exe";
+        if (! (new File(gbak)).exists()) {
+          cmd[0] = quot+cmd[0]+"\\Firebird\\Firebird_2_0\\bin\\gbak.exe"+quot;
+          is20 = true;
+        }
+        else {
+          cmd[0] = quot+gbak+quot;
+        }
       //  rmc = "cmd.exe /c del "+quot+dbTmpPath+quot;
       }
      // else rmc = "rm "+dbTmpPath;
@@ -507,21 +520,35 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
       try {
           Runtime runtime = Runtime.getRuntime();
           Process process = runtime.exec(cmd,null);
-        //InputStream is = process.getInputStream();
-        //BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        //String line;
-        //while((line=br.readLine())!=null) {
-        //  System.out.println(line);
-        //}
+          //InputStream is = process.getInputStream();
+          //BufferedReader br = new BufferedReader(new InputStreamReader(is));
+          //String line;
+          //while((line=br.readLine())!=null) {
+          //  System.out.println(line);
+          //}
           int tmpI = process.waitFor();
           if (tmpI==0) {
-             cmd[1] = "-r";
-             cmd[6] = quot+dbTmpPath+quot;
-             cmd[7] = quot+dbOutPath+quot;
+             if (is20) {
+               gbak = cmd[0];
+               cmd = new String[9];
+               cmd[0] = gbak;
+               cmd[1] = "-r";
+               cmd[2] = "-REP";
+               cmd[3] = "-user";
+               cmd[4] = dbUser;
+               cmd[5] = "-pass";
+               cmd[6] = dbPass;
+               cmd[7] = quot+dbTmpPath+quot;
+               cmd[8] = quot+dbOutPath+quot;
+             } else {
+               cmd[1] = "-r";
+               cmd[6] = quot+dbTmpPath+quot;
+               cmd[7] = quot+dbOutPath+quot;
+             }
              process = runtime.exec(cmd,null);
              tmpI = process.waitFor();
-             new DngFileUtil().chMod("666",cmd[7]);
-             new File(dbTmpPath).delete();
+             if (!osn.equals("Win") && !osn.equals("Mac")) new DngFileUtil().chMod("666",cmd[7]);
+             //new File(dbTmpPath).delete();
              //process = runtime.exec(rmc);
              //tmpI = process.waitFor();
           }
