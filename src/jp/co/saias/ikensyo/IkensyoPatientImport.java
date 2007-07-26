@@ -41,6 +41,7 @@ public class IkensyoPatientImport {
     public String propertyFile;
     public boolean propGeted = false;
     public boolean replaceAll = false;
+    public boolean isCsv = false;
     public DngAppProperty Props;
     public String dbServer;
     public String dbPath0;
@@ -118,8 +119,11 @@ public class IkensyoPatientImport {
           statMessage(STATE_ERROR,"取り込み元と取り込み先が同一ファイルです。");
             continue;
           }
+          if (dbPath0.matches(".*.csv$") || dbPath0.matches(".*.CSV$") ) {
+            isCsv=true;
+          }
 
-          if (isMbInPath) {
+          if (isMbInPath && ! isCsv) {
             dbPath0 = new File(dbPath).getParent()+"/importwork.fdb";
             try {
             new DngFileUtil().fileCopy(realInPath,dbPath0);
@@ -128,11 +132,20 @@ public class IkensyoPatientImport {
                return null;
             }
           }
-          uri = dbServer + "/" + dbPort + ":" + dbPath0;
-          iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
+          if (isCsv) {
+            iTable = new IkensyoPatientSelect(dbPath0);
+          }
+          else {
+            uri = dbServer + "/" + dbPort + ":" + dbPath0;
+            iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
+          }
 
         if (iTable.Rows<0) {
-          statMessage(STATE_ERROR,"取り込み元データベースに接続できません。\nデータベースファイルのアクセス権をご確認ください。");
+          if (isCsv) { 
+            statMessage(STATE_ERROR,"取り込み元CSVファイルが開けません。\nファイルのアクセス権をご確認ください。");
+          } else {
+            statMessage(STATE_ERROR,"取り込み元データベースに接続できません。\nデータベースファイルのアクセス権をご確認ください。");
+          }
           if (isMbInPath) new File(dbPath0).delete();
           return null;
         }
@@ -193,13 +206,15 @@ public class IkensyoPatientImport {
         //    "取り込み方法の選択"
         //  )
         //);
-        JLabel title = new JLabel(" 医見書 患者別データの取り込み");
+        JLabel title = new JLabel(" 医見書 患者"+((isCsv) ? "基本情報CSVファイルの取り込み":"別データの取り込み"));
         title.setFont(new Font("SansSerif",Font.BOLD,18));
-        JLabel choi = new JLabel("取り込み方法の選択：");
+        JLabel choi = (isCsv) ? new JLabel("※取り込み先に既存する患者情報は保持され、選択されていても取り込まれません。") : new JLabel("取り込み方法の選択：");
         choi.setFont(new Font("Dialog",Font.PLAIN,12));
         rbp.add(choi);
-        rbp.add(replaceBtn);
-        rbp.add(appendBtn);
+        if (!isCsv) {
+          rbp.add(replaceBtn);
+          rbp.add(appendBtn);
+        }
         JPanel northP = new JPanel(new BorderLayout());
         northP.add(title,BorderLayout.NORTH);
         contentPane.add(northP);
@@ -208,7 +223,7 @@ public class IkensyoPatientImport {
         center0P.add(execBtn);
         center0P.add(exitBtn);
         JPanel centerP = new JPanel();
-        JLabel lab0 = new JLabel("  取り込み元データベース："+realInPath);
+        JLabel lab0 = new JLabel("  取り込み元"+((isCsv) ? "CSVファイル": "データベース")+"："+realInPath);
         lab0.setFont(new Font("Serif",Font.PLAIN,12));
         lab0.setForeground(Color.darkGray);
         northP.add(lab0,BorderLayout.CENTER);
@@ -216,6 +231,9 @@ public class IkensyoPatientImport {
         lab1.setFont(new Font("Dialog",Font.PLAIN,12));
         centerP.add(lab1);
         contentPane.add(centerP);
+        if (isCsv) 
+        contentPane.add(iTable.getPatientList());
+        else
         contentPane.add(iTable.getScrollList());
         contentPane.add(center0P);
         JPanel southP = new JPanel(new GridLayout(0,1));
@@ -233,6 +251,9 @@ public class IkensyoPatientImport {
         JPanel pnA = new JPanel();
         pnA.add(lab3);
         contentPane.add(pnA);
+        if (isCsv)
+        contentPane.add(oTable.getPatientList());
+        else
         contentPane.add(oTable.getScrollList());
         TableSorter2 iS = iTable.getSorter();
         TableSorter2 oS = oTable.getSorter();
@@ -253,7 +274,7 @@ public class IkensyoPatientImport {
         };
         fr.addWindowListener(AppCloser);
         //fr.pack();
-        fr.setSize(655,610);
+        fr.setSize(((isCsv)? 710:680),610);
         Dimension sc = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension sz = fr.getSize();
         fr.setLocation((sc.width-sz.width)/2,(sc.height-sz.height)/2);
@@ -281,11 +302,11 @@ public class IkensyoPatientImport {
 
     public String getImportDBPath(int type) {
       String path = "";
-      String ext[] = {"FDB","fdb","old"};
+      String ext[] = {"FDB","fdb","old","CSV","csv"};
       String moto = (type==0) ? "取り込み元":"書き出し元";
       try {
-        DngFileChooser chooser = new DngFileChooser(fr,"FDB or old file for Ikensyo2.5",ext);
-        chooser.setTitle(moto+"患者データファイル(IKENSYO.FDBおよびバックアップも可)を指定してください。");
+        DngFileChooser chooser = new DngFileChooser(fr,"FDBファイル or CSVファイル",ext);
+        chooser.setTitle(moto+"患者データ(FDB,old) or 基本情報CSV 選択");
         chooser.setMBPathEnable(true);
         chooser.setInitPath((dbPath0!=null) ? dbPath0:dbPath); 
         File file = chooser.getFile();
@@ -364,12 +385,32 @@ public class IkensyoPatientImport {
         //String[] sSql = iTable.getPatientDataSql("SIS_ORIGIN",patientNo);
         //String[] cSql = iTable.getPatientDataSql("COMMON_IKN_SIS",patientNo);
         //tranSql[i] = new String[iSql.length+sSql.length+cSql.length+1];
-        int[] pinfo = (replaceAll) ? oTable.checkDuplicate(dat): null;
+        int[] pinfo = (replaceAll || isCsv) ? oTable.checkDuplicate(dat): null;
         if (pinfo==null) {
            pNos[i] = new int[2];
            pNos[i][0] = patientNo;
-           pNos[i][1] = 0;
+           pNos[i][1] = (isCsv) ? -1:0;
            //tranSql[i][0] = iTable.getPatientBasicDataSql(patientNo);
+        }  else if (isCsv || ! replaceAll) {
+           if (dupNum==0) {
+             pNos[i] = null;
+             JLabel l1 = new JLabel("取り込み元の以下の患者が取り込み先と重複しています。");
+             JLabel l2 = new JLabel("取り込み先の患者情報を保持し、以下の患者だけ無視して他を取り込みます。");
+             l1.setFont(new Font("Dialog",Font.PLAIN,12));
+             l2.setFont(new Font("Dialog",Font.PLAIN,12));
+             dupName.add(l1);
+             dupName.add(l2);
+           }
+           if (++dupNum < 10) {
+             JLabel l1 = new JLabel(dat[1].toString());
+             l1.setFont(new Font("Dialog",Font.PLAIN,12));
+             dupName.add(l1);
+           }
+           else if(dupNum==10) {
+             JLabel l1 = new JLabel("他 多数");
+             l1.setFont(new Font("Dialog",Font.PLAIN,12));
+             dupName.add(l1);
+           }
         } else {
            pNos[i] = new int[pinfo.length+1];
            pNos[i][0] = patientNo;

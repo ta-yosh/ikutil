@@ -18,7 +18,9 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import javax.swing.event.*;
+import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import jp.co.saias.util.*;
 import jp.co.saias.lib.*;
@@ -35,23 +37,86 @@ public class IkensyoPatientSelect {
     private TableSorter2 sorter;
     String osType;
 
+    public IkensyoPatientSelect(String csvFile) {
+      String line;
+      Rows=0;
+      try {
+        BufferedReader reader = new BufferedReader(new FileReader(csvFile));
+        while ((line=reader.readLine()) !=null) {
+          String[] ritems = new String[] {"","","","","","","","","","",""};
+          String[] items = line.split(",");
+          int skip=0;
+          int col=0;
+          Vector rdat = new Vector();
+          rdat.addElement(new Integer(Rows+1));
+          for (int i=0;i<items.length;i++) {
+            if (skip>0) {
+              skip--;
+              continue;
+            }
+            col++;
+            String item = (items[i]!=null) ? items[i]:"";
+            if (item.matches("^\"(([^\"]|[^a-zA-Z_0-9\"])*?(\"\")*?[^\"]*?)*?\"$")) {
+              item = item.replaceAll("^\"","").replaceAll("\"$","");
+            }
+            else if (item.matches("^\"(([^\"]|[^a-zA-Z_0-9\"])*?(\"\")*?[^\"]*?)*$")) {
+              while (! item.matches("^\"(([^\"]|[^a-zA-Z_0-9\"])*?(\"\")*?[^\"]*?)*?\"$")) { 
+                skip++;
+                item = item +","+ items[i+skip];
+              }
+              item = item.replaceAll("^\"","").replaceAll("\"$","");
+            }
+            item = item.replaceAll("\"\"","\"");
+            if (col==4) item = "   "+item;
+            if (col==6) {
+              Integer age = new Integer(patientAge(ritems[5]));
+              ritems[col] = age.toString();
+            }
+            if (col==9) {
+              if (item.matches(".+-.+")) {
+                String wk[] = item.split("-",2);
+                if (wk[1].matches(".+-.+")) {
+                  ritems[col] = wk[0];
+                  ritems[++col] = wk[1];
+                } else {
+                  ritems[col] = "";
+                  ritems[++col] = item;
+                }
+              }
+              else {
+                ritems[col] = "";
+                ritems[++col] = item;
+              }
+            }
+            else ritems[col] = item;
+            System.out.println(col+":"+item);
+            if (col==10) break;
+          }
+          rdat.addElement(ritems[1]);
+          rdat.addElement(ritems[2]);
+          rdat.addElement(ritems[4]);
+          rdat.addElement(new Integer(ritems[6]));
+          rdat.addElement("");
+          rdat.addElement("");
+          rdat.addElement("");
+          rdat.addElement(ritems[5]);
+          rdat.addElement(ritems[3]);
+          rdat.addElement(ritems[7]);
+          rdat.addElement(ritems[8]);
+          rdat.addElement(ritems[9]);
+          rdat.addElement(ritems[10]);
+          rdat.addElement("");
+          this.data.addElement(rdat); 
+          Rows++;
+        }
+      }
+      catch (Exception e) {
+         Rows--;
+      }
+    }
+
     public IkensyoPatientSelect(String dbUri,String dbUser,String dbPass) {
       osType = System.getProperty("os.name").substring(0,3);
-      fieldName.addElement("");
-      fieldName.addElement("患者ID");
-      fieldName.addElement("氏名");
-      fieldName.addElement("性別");
-      fieldName.addElement("年齢");
-      fieldName.addElement("意見書記入日");
-      fieldName.addElement("指示書記入日");
-      fieldName.addElement("最終更新日");
-      fieldName.addElement("生年月日");
-      fieldName.addElement("ふりがな");
-      fieldName.addElement("郵便番号");
-      fieldName.addElement("住所");
-      fieldName.addElement("電話1");
-      fieldName.addElement("電話2");
-      fieldName.addElement("更新日");
       dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
       StringBuffer buf = new StringBuffer();
       buf.append("select PATIENT.PATIENT_NO,PATIENT.CHART_NO,");
@@ -116,6 +181,23 @@ public class IkensyoPatientSelect {
       else Rows=-1;
     }
 
+    void setFieldName() {
+      fieldName.addElement("");
+      fieldName.addElement("患者ID");
+      fieldName.addElement("氏名");
+      fieldName.addElement("性別");
+      fieldName.addElement("年齢");
+      fieldName.addElement("意見書記入日");
+      fieldName.addElement("指示書記入日");
+      fieldName.addElement("最終更新日");
+      fieldName.addElement("生年月日");
+      fieldName.addElement("ふりがな");
+      fieldName.addElement("郵便番号");
+      fieldName.addElement("住所");
+      fieldName.addElement("電話1");
+      fieldName.addElement("電話2");
+      fieldName.addElement("更新日");
+    }
     public boolean isSelected() {
       int sel = usrTbl.getSelectedRow();
       return (sel!=-1) ? true:false;
@@ -308,12 +390,17 @@ public class IkensyoPatientSelect {
                   break;
           case 8: wk = dat.elementAt(i).toString().replaceAll("/","-");
                   break;
+          case 14: if (dat.elementAt(i).toString().equals("")) wk = "CURRENT_TIMESTAMP";
+                   else wk = dat.elementAt(i).toString();
+                  break;
           default: wk = dat.elementAt(i).toString();
         }
           if (i>1) sb.append(",");
-          if (wk!=null && wk.length()>0) sb.append("'");
+          if (wk!=null && wk.length()>0 && !wk.equals("CURRENT_TIMESTAMP")) 
+            sb.append("'");
           sb.append((wk!=null && wk.length()>0) ? wk:"null");
-          if (wk!=null && wk.length()>0) sb.append("'");
+          if (wk!=null && wk.length()>0 && !wk.equals("CURRENT_TIMESTAMP")) 
+            sb.append("'");
       }
       sb.append(",CURRENT_TIMESTAMP)");
       //System.out.println(sb);
@@ -364,6 +451,7 @@ public class IkensyoPatientSelect {
        return age;
     }
     public JScrollPane getScrollList() {
+      setFieldName();
         dtm = new DefaultTableModel(data, fieldName);
         sorter = new TableSorter2(dtm);
         usrTbl = new JTable(sorter);
@@ -377,11 +465,15 @@ public class IkensyoPatientSelect {
 	usrTbl.setDefaultEditor(Object.class, null);
         usrTbl.setShowGrid(false);
 	if (!isSelectable) usrTbl.setCellSelectionEnabled(isSelectable);
+        DefaultTableCellRenderer ren = new DefaultTableCellRenderer();
+        ren.setHorizontalAlignment(SwingConstants.RIGHT);
+
         usrTbl.getColumnModel().getColumn(0).setMinWidth(0);
         usrTbl.getColumnModel().getColumn(0).setMaxWidth(0);
         usrTbl.getColumnModel().getColumn(1).setPreferredWidth(100);
         usrTbl.getColumnModel().getColumn(2).setPreferredWidth(120);
         usrTbl.getColumnModel().getColumn(3).setPreferredWidth(45);
+        usrTbl.getColumnModel().getColumn(4).setCellRenderer(ren);
         usrTbl.getColumnModel().getColumn(4).setPreferredWidth(45);
         usrTbl.getColumnModel().getColumn(5).setPreferredWidth(100);
         usrTbl.getColumnModel().getColumn(6).setPreferredWidth(100);
@@ -416,6 +508,7 @@ public class IkensyoPatientSelect {
     }
 
     public JScrollPane getPatientList() {
+      setFieldName();
         dtm = new DefaultTableModel(data, fieldName);
         sorter = new TableSorter2(dtm);
         usrTbl = new JTable(sorter);
@@ -429,11 +522,14 @@ public class IkensyoPatientSelect {
 	usrTbl.setDefaultEditor(Object.class, null);
         usrTbl.setShowGrid(false);
 	if (!isSelectable) usrTbl.setCellSelectionEnabled(isSelectable);
+        DefaultTableCellRenderer ren = new DefaultTableCellRenderer();
+        ren.setHorizontalAlignment(SwingConstants.RIGHT);
         usrTbl.getColumnModel().getColumn(0).setMinWidth(0);
         usrTbl.getColumnModel().getColumn(0).setMaxWidth(0);
         usrTbl.getColumnModel().getColumn(1).setPreferredWidth(100);
         usrTbl.getColumnModel().getColumn(2).setPreferredWidth(120);
         usrTbl.getColumnModel().getColumn(3).setPreferredWidth(45);
+        usrTbl.getColumnModel().getColumn(4).setCellRenderer(ren);
         usrTbl.getColumnModel().getColumn(4).setPreferredWidth(45);
         usrTbl.getColumnModel().getColumn(5).setMinWidth(0);
         usrTbl.getColumnModel().getColumn(5).setMaxWidth(0);
@@ -502,4 +598,3 @@ public class IkensyoPatientSelect {
     }
 
 }
-

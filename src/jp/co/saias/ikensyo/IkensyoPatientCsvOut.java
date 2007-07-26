@@ -166,7 +166,7 @@ public class IkensyoPatientCsvOut extends IkensyoPatientImport {
           }
         };
         fr.addWindowListener(AppCloser);
-        fr.setSize(680,610);
+        fr.setSize(710,610);
         Dimension sc = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension sz = fr.getSize();
         fr.setLocation((sc.width-sz.width)/2,(sc.height-sz.height)/2);

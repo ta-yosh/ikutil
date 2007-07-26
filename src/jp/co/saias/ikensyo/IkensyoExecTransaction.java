@@ -95,6 +95,7 @@ public class IkensyoExecTransaction extends Thread {
         }
       }
       for (int i=0;i<pNos.length;i++) {
+        if (pNos[i]==null) continue;
         try {
           sleep(0);
           synchronized(this) {
@@ -123,7 +124,7 @@ public class IkensyoExecTransaction extends Thread {
           if (pfile!=null) {
             String type[] = {"IKN_ORIGIN","IKN_BILL","SIS_ORIGIN","COMMON_IKN_SIS","PATIENT"};
             dbm.begin();
-            if (pNos[i][1]!=0) {
+            if (pNos[i][1]>0) {
               StringBuffer sb = new StringBuffer();
               dNum = new int[pNos[i].length-1];
               for (int j=1;j<pNos[i].length;j++) {
@@ -138,7 +139,8 @@ public class IkensyoExecTransaction extends Thread {
                 dbm.execUpdate(sql);
               }
             }
-            if (dbm.execUpdate(bsql)!=-1) {
+            int dbstat=dbm.execUpdate(bsql);
+            if (dbstat!=-1 && pNos[i][1]>=0 ) {
               sql = "select GEN_ID(GEN_PATIENT,0) from RDB$DATABASE";
               dbm.execQuery(sql);
               patientNo = Integer.parseInt((dbm.getData(0,0)).toString());
@@ -159,7 +161,7 @@ public class IkensyoExecTransaction extends Thread {
                 }
               }
             } 
-            else {
+            else if (dbstat==-1) {
               stat=STATE_ERROR;
               errSql=bsql;
             }
