@@ -52,6 +52,7 @@ public class DngFileChooser {
     }
 
     public File getFile() {
+        String osnAll = System.getProperty("os.name");
         File file=null;
         boolean loopFlg;
         String path = initialPath;
@@ -78,6 +79,17 @@ public class DngFileChooser {
             if (file == null) {
                 return null;
             }
+            String filePath = file.getPath();
+
+            if (osnAll.equals("Windows Vista") && filePath.indexOf("\\Program Files\\")>=0) {
+              filePath = System.getProperty("user.home")+"\\AppData\\Local\\VirtualStore"+filePath.substring(filePath.indexOf("\\Program Files"));
+              File fil = new File(filePath);
+              if (fil.exists()) {
+                file = null;
+                file = fil;
+              }
+            }
+            System.out.println(file.getPath()+":"+file.length());
 
             if (!mbPath) { 
               if (file.getPath().matches("^.*[^a-zA-Z0-9-.+_/: \\\\]+.*$")) {
@@ -101,6 +113,7 @@ public class DngFileChooser {
     }
 
     public File saveFile(String path,String fname) {
+        String osnAll = System.getProperty("os.name");
         File file= null;
         boolean loopFlg;
         //parent = this.parent;
@@ -115,12 +128,9 @@ public class DngFileChooser {
                 filter = new DngFileFilter();
             }
             chooser.setFileFilter(filter);
-            file = new File((String)(chooser.getCurrentDirectory().getPath())+"/"+fname);
-            chooser.setSelectedFile(file);
-            file = null;
+            chooser.setSelectedFile(new File((String)(chooser.getCurrentDirectory().getPath())+"/"+fname));
             if (title!=null) chooser.setDialogTitle(title);
             loopFlg = false;
-
             int returnVal = chooser.showSaveDialog(parent);
             if(returnVal == JFileChooser.APPROVE_OPTION) {
                 file = chooser.getSelectedFile();
@@ -130,6 +140,17 @@ public class DngFileChooser {
             if (file == null) {
                 return null;
             }
+
+            String filePath = file.getPath();
+
+            if (osnAll.equals("Windows Vista") && filePath.indexOf("\\Program Files\\")>=0) {
+              filePath = System.getProperty("user.home")+"\\AppData\\Local\\VirtualStore"+filePath.substring(filePath.indexOf("\\Program Files"));
+              file = null;
+              file = new File(filePath);
+              File dir = new File(file.getParent());
+              if (! dir.isDirectory()) dir.mkdirs();
+            }
+
             if (!mbPath) { 
               if (file.getPath().matches("^.*[^a-zA-Z0-9-.+_/: \\\\]+.*$")) {
                 JOptionPane.showMessageDialog(parent,"保存先に、\n日本語や記号文字等を含むフォルダ名ファイル名は、使用できません。\n"+file.getPath(),"保存先エラー",JOptionPane.ERROR_MESSAGE);

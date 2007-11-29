@@ -6,8 +6,8 @@
   <target name="compile"> 
     <delete dir="${ClassDir}" /> 
     <mkdir dir="${ClassDir}" /> 
-    <javac srcdir="src" destdir="${ClassDir}" nowarn="on"> 
-      <include name="jp/co/saias/**/*" /> 
+    <javac srcdir="src" destdir="${ClassDir}" nowarn="on" source="1.4"> 
+      <include name="jp/co/saias/**/*.java" /> 
       <exclude name="jp/co/saias/lib/DngPreviewHtml.java" /> 
     </javac> 
     <copy todir="${ClassDir}">
