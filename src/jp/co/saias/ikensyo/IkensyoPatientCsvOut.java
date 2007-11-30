@@ -100,6 +100,37 @@ public class IkensyoPatientCsvOut extends IkensyoPatientImport {
       } 
       else contentPane.removeAll();
 
+      final JButton pdfBtn = new JButton("一覧印刷");
+      pdfBtn.setFont(new Font("SanSerif",Font.PLAIN,14));
+      final ActionListener pdfOut = new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+          String fname = iTable.PDFout();
+          if (fname!=null) {
+            File pr = new File(getProperty("Acrobat/Path"));
+            File f = new File(fname);
+            if (!pr.exists() && !System.getProperty("os.name").substring(0,3).equals("Mac")) {
+              statMessage(STATE_ERROR,"PDF設定が不正であるため、印刷できません。医見書本体でPDF設定を確認してください。");
+              f.delete();
+              return;
+            }
+            String cmd[] = {getProperty("Acrobat/Path"),fname};
+            if ( System.getProperty("os.name").substring(0,3).equals("Mac") ) {
+              cmd[0] = "open";
+            }
+            try {
+              Process ps = Runtime.getRuntime().exec(cmd,null);
+              ps.waitFor();
+              f.delete();
+            } catch (Exception ex) {
+              return;
+            }
+          }
+          else statMessage(STATE_ERROR,"印刷ドキュメント生成に失敗しました。");
+          return;
+        }
+      };
+      pdfBtn.addActionListener(pdfOut);
+
         ActionListener append = new ActionListener() {
           public void actionPerformed(ActionEvent e) {
              replaceAll = false;
@@ -133,6 +164,7 @@ public class IkensyoPatientCsvOut extends IkensyoPatientImport {
         title.setFont(new Font("SansSerif",Font.BOLD,18));
         JPanel northP = new JPanel(new BorderLayout());
         northP.add(title,BorderLayout.NORTH);
+        northP.add(pdfBtn,BorderLayout.EAST);
         contentPane.add(northP);
         center0P = new JPanel();
         center0P.add(execBtn);

@@ -2,6 +2,7 @@ package jp.co.saias.ikensyo;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Vector;
 import java.util.Calendar;
 import java.awt.BorderLayout;
@@ -580,6 +581,76 @@ public class IkensyoPatientSelect {
     public void addRow(Vector dat) {
       dtm.insertRow(0,dat);
       usrTbl.repaint();
+    }
+
+    public String PDFout() {
+      int cid=0;
+      int num=0;
+      float width[] = new float[7];
+      int ctype[] = new int[9];
+      Arrays.fill(ctype,0);
+      width[cid++] = 8; //ID
+      ctype[cid] = 6; // 0 - normal 1 - add comma 2 - align right
+      width[cid++] = 24; //ふりがな 
+      ctype[cid] = 5; //生年月日
+      width[cid++] = Float.parseFloat("4.5"); //生年月日
+      width[cid] = Float.parseFloat("4.5"); //生年月日
+      ctype[cid++] = 2; //郵便番号
+      width[cid++] = 8; //郵便番号
+      width[cid] = 24; //住所
+      ctype[cid++] = 2; //連絡先(Tel)
+      width[cid] = 12; //連絡先(Tel)
+      ctype[cid++] = 4; //氏名
+      ctype[cid++] = 3; //性別
+      //width[cid++] = 5; //性別
+      ctype[cid] = 3; //年齢 
+      //width[cid++] = 5; //年齢 
+      Calendar cal = Calendar.getInstance();
+      StringBuffer sb = new StringBuffer();
+      sb.append("PATIENT");
+      sb.append(cal.get(Calendar.YEAR));
+      if (cal.get(Calendar.MONTH)+1<10) sb.append("0");
+      sb.append(cal.get(Calendar.MONTH)+1);
+      if (cal.get(Calendar.DATE)<10) sb.append("0");
+      sb.append(cal.get(Calendar.DATE));
+      sb.append(".pdf");
+      String fname = sb.toString();
+
+      DngPdfTable pdf = new DngPdfTable(fname,0);
+      if (pdf.openPDF("患者基本情報一覧")) {
+        sb.delete(0,sb.length());
+        sb.append(cal.get(Calendar.YEAR));
+        sb.append("年");
+        if (cal.get(Calendar.MONTH)+1<10) sb.append("0");
+        sb.append(cal.get(Calendar.MONTH)+1);
+        sb.append("月");
+        if (cal.get(Calendar.DATE)<10) sb.append("0");
+        sb.append(cal.get(Calendar.DATE));
+        sb.append("日");
+        sb.append(" 現在");
+        pdf.setParagraph(-1,sb.toString());
+        int[] cnum = new int[] {1,9,8,10,11,12,2,3,4};
+        Object[][] pdfDat = new Object[usrTbl.getRowCount()][cnum.length];
+        Object[] pdfColName = new Object[cnum.length];
+        for (int i=0;i<usrTbl.getRowCount();i++) {
+           for (int j=0;j<cnum.length;j++) {
+             if (cnum[j]==12) {
+             pdfDat[i][j] = usrTbl.getValueAt(i,cnum[j]).toString().replaceAll("^ +","").replaceAll(" +$","")+"-"+usrTbl.getValueAt(i,cnum[j]+1).toString().replaceAll("^ +","").replaceAll(" +$","");
+             if (i==0) pdfColName[j] = (Object)"連絡先(Tel)";
+             } else {
+             pdfDat[i][j] = usrTbl.getValueAt(i,cnum[j]).toString().replaceAll("^ +","").replaceAll(" +$","");
+             if (i==0) pdfColName[j] = usrTbl.getColumnName(cnum[j]);
+             }
+           }
+        }
+        JTable pdfTbl = new JTable(pdfDat,pdfColName);
+        pdf.setTable(pdfTbl,width,ctype,7);
+        pdf.flush();
+        return fname;
+      }
+      else {
+        return null;
+      }
     }
 
     public static void main(String args[]){

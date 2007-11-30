@@ -3,10 +3,15 @@
   <property name="SrcDir" value="src" /> 
   <property name="ClassDir" value="classes" /> 
   <property name="JarName" value="DBUtil.jar" /> 
+  <path id="BuildClasspath">
+    <pathelement path="lib/firebirdsql-full.jar" />
+    <pathelement path="lib/iText.jar" />
+    <pathelement path="lib/iTextAsian.jar" />
+  </path>
   <target name="compile"> 
     <delete dir="${ClassDir}" /> 
     <mkdir dir="${ClassDir}" /> 
-    <javac srcdir="src" destdir="${ClassDir}" nowarn="on" source="1.4"> 
+    <javac srcdir="src" destdir="${ClassDir}" classpathref="BuildClasspath" nowarn="on" source="1.4"> 
       <include name="jp/co/saias/**/*.java" /> 
       <exclude name="jp/co/saias/lib/DngPreviewHtml.java" /> 
     </javac> 
@@ -21,7 +26,7 @@
       <include name="jp/co/saias/ikensyo/icon/*" /> 
       <manifest> 
         <attribute name="Main-Class" value="jp.co.saias.ikensyo.IkensyoDBUtilMain" /> 
-        <attribute name="Class-Path" value=". lib/firebirdsql-full.jar" /> 
+        <attribute name="Class-Path" value=". lib/firebirdsql-full.jar lib/iText.jar lib/iTextAsian.jar" /> 
       </manifest> 
     </jar> 
     <delete dir="${ClassDir}" /> 
