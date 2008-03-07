@@ -62,6 +62,7 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
             cancel(); 
           }
           String uri = dbServer + "/" + dbPort + ":" + dbPath;
+          if (dbServer.equals("embedded")) uri = "embedded:"+dbPath;
           iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
           if (iTable.Rows<0) {
             statMessage(STATE_ERROR,"データベースに接続できません。\n医見書が問題なく起動する状態かどうかご確認ください。");
@@ -445,6 +446,7 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
         String dbUser = getProperty("DBConfig/UserName");
         String dbPass = getProperty("DBConfig/Password");
         String dbUri = dbServer+"/"+dbPort+":"+path;
+       if (dbServer.equals("embedded")) dbUri = "embedded:"+path;
         DngDBAccess dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
         if (!dbm.connect()) {
           statMessage(STATE_ERROR,"書き出し用データベースに接続できません。\nDB:"+dbUri);
@@ -528,23 +530,23 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
           //}
           int tmpI = process.waitFor();
           if (tmpI==0) {
-             if (is20) {
-               gbak = cmd[0];
-               cmd = new String[9];
-               cmd[0] = gbak;
-               cmd[1] = "-r";
-               cmd[2] = "-REP";
-               cmd[3] = "-user";
-               cmd[4] = dbUser;
-               cmd[5] = "-pass";
-               cmd[6] = dbPass;
-               cmd[7] = quot+dbTmpPath+quot;
-               cmd[8] = quot+dbOutPath+quot;
-             } else {
-               cmd[1] = "-r";
+             //if (is20) {
+             //  gbak = cmd[0];
+             //  cmd = new String[9];
+             //  cmd[0] = gbak;
+             //  cmd[1] = "-r";
+             //  cmd[2] = "-REP";
+             //  cmd[3] = "-user";
+             //  cmd[4] = dbUser;
+             //  cmd[5] = "-pass";
+             //  cmd[6] = dbPass;
+             //  cmd[7] = quot+dbTmpPath+quot;
+             //  cmd[8] = quot+dbOutPath+quot;
+             //} else {
+               cmd[1] = "-rep";
                cmd[6] = quot+dbTmpPath+quot;
                cmd[7] = quot+dbOutPath+quot;
-             }
+             //}
              process = runtime.exec(cmd,null);
              tmpI = process.waitFor();
              if (!osn.equals("Win") && !osn.equals("Mac")) new DngFileUtil().chMod("666",cmd[7]);
