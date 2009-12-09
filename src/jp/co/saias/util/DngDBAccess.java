@@ -55,7 +55,7 @@ public class DngDBAccess {
         con = DriverManager.getConnection(url ,user, passwd);
         return true;
       } catch (Exception e) {
-        //System.err.println("データベース接続エラー"+e);
+        System.err.println("データベース接続エラー"+e);
 	return false; 
       }
     }

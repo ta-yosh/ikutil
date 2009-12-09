@@ -71,12 +71,13 @@ public class IkensyoExecTransaction extends Thread {
       int lcount = 0;
       if (pfile!=null) {
         DngAppProperty props = new DngAppProperty(pfile); 
-        String dbPort = props.getProperty("DBConfig/Port");
-        String dbUser = props.getProperty("DBConfig/UserName");
-        String dbPass = props.getProperty("DBConfig/Password");
-        String dbPath = (oTable==null) ? dbOutPath:props.getProperty("DBConfig/Path");
-        String dbServer = props.getProperty("DBConfig/Server");
+        String dbPort = props.getProperty("doc/DBConfig/Port");
+        String dbUser = props.getProperty("doc/DBConfig/UserName");
+        String dbPass = props.getProperty("doc/DBConfig/Password");
+        String dbPath = (oTable==null) ? dbOutPath:props.getProperty("doc/DBConfig/Path");
+        String dbServer = props.getProperty("doc/DBConfig/Server");
         String dbUri = dbServer+"/"+dbPort+":"+dbPath;
+        if (dbServer.equals("embedded")) dbUri = "embedded:"+dbPath;
         dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
         if (!dbm.connect()) {
           stat = STATE_FATAL;

@@ -8,19 +8,31 @@ public class DngXMLGetDirective {
   String strTag="";
   String strValue="";
   public DngXMLGetDirective(String contents) { 
-    Pattern pattern = Pattern.compile("<([^!>/?]+)>");
+    tagParse(contents);
+  }
+
+  public void tagParse(String contents) {
+    contents = Pattern.compile("<!--.*?-->",Pattern.DOTALL).matcher(contents).replaceAll("");
+    //System.out.println(contents);
+    Pattern pattern = Pattern.compile("<([^!>/?]+?)>");
     Matcher matcher = pattern.matcher(contents);
-    while(matcher.find()) {
-      if (strTag!="") strTag += ":_"; 
+    while (matcher.find()) {
       String str=matcher.group(1);
-      strTag += str;
       String strTagp[] = str.split("[ \t\n\f\r]+");
       Pattern pattern2 = Pattern.compile("<"+str+">(.*?)</"+strTagp[0]+">",Pattern.DOTALL);
       Matcher matcher2 = pattern2.matcher(contents);
       if (matcher2.find()) {
+        if (strTag!="") strTag += ":_"; 
+        strTag += str;
         if (strValue!="") strValue += ":_"; 
-        strValue += matcher2.group(1);
+        String val = matcher2.group(1);
+        strValue += val;
+        //tagParse(val);
       }
+      contents = contents.replaceAll(matcher2.group(0),"");
+      System.out.println(contents);
+      matcher = matcher.reset();
+      matcher = pattern.matcher(contents);
     }
   }
  

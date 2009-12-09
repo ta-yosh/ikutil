@@ -38,6 +38,8 @@ public class IkensyoPatientSelect {
     private TableSorter2 sorter;
     String osType;
 
+    public IkensyoPatientSelect() {
+    }
     public IkensyoPatientSelect(String csvFile) {
       String line;
       Rows=0;
@@ -193,9 +195,9 @@ public class IkensyoPatientSelect {
       fieldName.addElement("最終更新日");
       fieldName.addElement("生年月日");
       fieldName.addElement("ふりがな");
-      fieldName.addElement("郵便番号");
+      fieldName.addElement("〒");
       fieldName.addElement("住所");
-      fieldName.addElement("電話1");
+      fieldName.addElement("電話");
       fieldName.addElement("電話2");
       fieldName.addElement("更新日");
     }
@@ -586,25 +588,20 @@ public class IkensyoPatientSelect {
     public String PDFout() {
       int cid=0;
       int num=0;
-      float width[] = new float[7];
+      float width[] = new float[9];
       int ctype[] = new int[9];
       Arrays.fill(ctype,0);
-      width[cid++] = 8; //ID
-      ctype[cid] = 6; // 0 - normal 1 - add comma 2 - align right
-      width[cid++] = 24; //ふりがな 
-      ctype[cid] = 5; //生年月日
-      width[cid++] = Float.parseFloat("4.5"); //生年月日
-      width[cid] = Float.parseFloat("4.5"); //生年月日
-      ctype[cid++] = 2; //郵便番号
-      width[cid++] = 8; //郵便番号
-      width[cid] = 24; //住所
-      ctype[cid++] = 2; //連絡先(Tel)
-      width[cid] = 12; //連絡先(Tel)
-      ctype[cid++] = 4; //氏名
-      ctype[cid++] = 3; //性別
-      //width[cid++] = 5; //性別
-      ctype[cid] = 3; //年齢 
-      //width[cid++] = 5; //年齢 
+      width[cid++] = 9; //ID
+      width[cid++] = 10; //氏名
+      width[cid++] = 10; //ふりがな
+      ctype[cid] = 7;
+      width[cid++] = 3; //性別
+      ctype[cid] = 2; // 0 - normal 1 - add comma 2 - align right
+      width[cid++] = 3; //年齢 
+      width[cid++] = 5; //生年月日
+      width[cid++] = 4; //郵便番号
+      width[cid++] = 23; //住所
+      width[cid] = 6; //連絡先(Tel)
       Calendar cal = Calendar.getInstance();
       StringBuffer sb = new StringBuffer();
       sb.append("PATIENT");
@@ -616,7 +613,7 @@ public class IkensyoPatientSelect {
       sb.append(".pdf");
       String fname = sb.toString();
 
-      DngPdfTable pdf = new DngPdfTable(fname,0);
+      DngPdfTable pdf = new DngPdfTable(fname,1);
       if (pdf.openPDF("患者基本情報一覧")) {
         sb.delete(0,sb.length());
         sb.append(cal.get(Calendar.YEAR));
@@ -628,23 +625,19 @@ public class IkensyoPatientSelect {
         sb.append(cal.get(Calendar.DATE));
         sb.append("日");
         sb.append(" 現在");
-        pdf.setParagraph(-1,sb.toString());
-        int[] cnum = new int[] {1,9,8,10,11,12,2,3,4};
-        Object[][] pdfDat = new Object[usrTbl.getRowCount()][cnum.length];
-        Object[] pdfColName = new Object[cnum.length];
+        pdf.setSubTitle(sb.toString());
+        int[] cnum = new int[] {1,2,9,3,4,8,10,11,12,13};
+        Object[][] pdfDat = new Object[usrTbl.getRowCount()][9];
+        Object[] pdfColName = new Object[9];
         for (int i=0;i<usrTbl.getRowCount();i++) {
-           for (int j=0;j<cnum.length;j++) {
-             if (cnum[j]==12) {
-             pdfDat[i][j] = usrTbl.getValueAt(i,cnum[j]).toString().replaceAll("^ +","").replaceAll(" +$","")+"-"+usrTbl.getValueAt(i,cnum[j]+1).toString().replaceAll("^ +","").replaceAll(" +$","");
-             if (i==0) pdfColName[j] = (Object)"連絡先(Tel)";
-             } else {
+           for (int j=0;j<9;j++) {
              pdfDat[i][j] = usrTbl.getValueAt(i,cnum[j]).toString().replaceAll("^ +","").replaceAll(" +$","");
+             if (j==8) pdfDat[i][j] = pdfDat[i][j].toString()+"-"+ usrTbl.getValueAt(i,cnum[j+1]).toString().replaceAll("^ +","").replaceAll(" +$","");
              if (i==0) pdfColName[j] = usrTbl.getColumnName(cnum[j]);
-             }
            }
         }
         JTable pdfTbl = new JTable(pdfDat,pdfColName);
-        pdf.setTable(pdfTbl,width,ctype,7);
+        pdf.setTable(pdfTbl,width,ctype,0);
         pdf.flush();
         return fname;
       }

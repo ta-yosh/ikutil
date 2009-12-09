@@ -60,9 +60,9 @@ public class IkensyoPatientImport {
 
     public IkensyoPatientImport() {
         propertyFile = getPropertyFile(); 
-        dbServer = getProperty("DBConfig/Server");
-        dbPath = getProperty("DBConfig/Path");
-        dbPort = getProperty("DBConfig/Port");
+        dbServer = getProperty("doc/DBConfig/Server");
+        dbPath = getProperty("doc/DBConfig/Path");
+        dbPort = getProperty("doc/DBConfig/Port");
     }
 
     public void destroy() {
@@ -104,7 +104,8 @@ public class IkensyoPatientImport {
         boolean kstat = false;
         String uri;
         uri = dbServer + "/" + dbPort + ":" + dbPath;
-        oTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
+        if (dbServer.equals("embedded")) uri = "embedded:"+dbPath;
+        oTable = new IkensyoPatientSelect(uri,getProperty("doc/DBConfig/UserName"),getProperty("doc/DBConfig/Password"));
         oTable.setSelectable(false);
         if (oTable.Rows<0) {
           statMessage(STATE_ERROR,"医見書データベースに接続できません。\n医見書 が正常に起動する状態かどうかご確認ください。");
@@ -137,7 +138,8 @@ public class IkensyoPatientImport {
           }
           else {
             uri = dbServer + "/" + dbPort + ":" + dbPath0;
-            iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
+            if (dbServer.equals("embedded")) uri = dbServer+":"+dbPath0;
+            iTable = new IkensyoPatientSelect(uri,getProperty("doc/DBConfig/UserName"),getProperty("doc/DBConfig/Password"));
           }
 
         if (iTable.Rows<0) {
@@ -293,7 +295,8 @@ public class IkensyoPatientImport {
 
     public boolean checkLocalHost(String server) {
         if (!server.equals("localhost") &&
-            !server.equals("127.0.0.1")) {
+            !server.equals("127.0.0.1") &&
+            !server.equals("embedded")) {
             statMessage(STATE_ERROR,"この操作はデータベースサーバとなっているコンピュータで行って下さい。");
             return false;
         }
@@ -368,6 +371,7 @@ public class IkensyoPatientImport {
 
     public int[][] prepareExec() {
       if (!iTable.isSelected()) return null;
+System.out.println("iTableRows = "+iTable.Rows);
       Object pdat[][] = iTable.getSelectedPatients();
       if (pdat.length<1) return null;
       //String tranSql[] = new String[pdat.length];

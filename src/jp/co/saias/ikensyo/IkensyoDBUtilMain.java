@@ -35,7 +35,7 @@ public class IkensyoDBUtilMain {
 
     final IkensyoDBUtilMain idm = new IkensyoDBUtilMain();
     final JFrame fr = new JFrame();
-    fr.setTitle("医見書 患者データユーティリティ Ver2.2");
+    fr.setTitle("医見書 患者データユーティリティ Ver2.3");
     fr.setIconImage(idm.icon);
     final Container contentPane = fr.getContentPane();
     contentPane.setLayout(new BorderLayout());
@@ -73,6 +73,17 @@ public class IkensyoDBUtilMain {
     };
     csb.addActionListener(triggerCsvOut);
 
+    final JButton ssb = new JButton("訪問看護ステーション一覧");
+    ssb.setFont(new Font("SanSerif",Font.PLAIN,14));
+    ActionListener triggerShisetsuOut = new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        execThread it = new execThread(fr,4);
+        it.start();
+        //it.restart();
+      }
+    };
+    ssb.addActionListener(triggerShisetsuOut);
+
 /*
     final JButton web = new JButton("医見書ウェブサイト");
     web.setFont(new Font("SanSerif",Font.PLAIN,14));
@@ -97,6 +108,11 @@ public class IkensyoDBUtilMain {
     pn.add(exb);
     pn.add(imb);
     pn.add(csb);
+    int ysiz=200;
+    if ((new IkensyoShisetsuDetect()).stationDetect()==true) {
+      pn.add(ssb);
+      ysiz=ysiz+50;
+    }
     JLabel sysTitle = new JLabel("医見書 患者データユーティリティ");
     sysTitle.setFont(new Font("SanSerif",Font.BOLD,15));
     contentPane.add(sysTitle,BorderLayout.NORTH);
@@ -110,7 +126,7 @@ public class IkensyoDBUtilMain {
     };
     fr.addWindowListener(AppCloser);
 
-    fr.setSize(320,200);
+    fr.setSize(320,ysiz);
     Dimension sc = Toolkit.getDefaultToolkit().getScreenSize();
     Dimension sz = fr.getSize();
     fr.setLocation((sc.width-sz.width)/2,(sc.height-sz.height)/2);
@@ -198,6 +214,27 @@ class execThread extends Thread {
             break;
           }
           ipc.execCsvOut();
+        }
+      }
+      catch(Exception ex) {
+        ipc.statMessage(ipc.STATE_FATAL,ex.getMessage());
+      }
+    }
+    else if(type==4) {
+      IkensyoShisetsuOut ipc = new IkensyoShisetsuOut();
+      if (!ipc.vStat) {
+        ipc.statMessage(ipc.STATE_FATAL,"正しくないデータベース設定です。医見書を起動してデータベースの設定を確認してください。");
+        System.exit(1);
+      }
+      ipc.setParent(frm);
+      try {
+        while(ipc.runStat!=ipc.STATE_FATAL) {
+          //System.out.println("STAT = "+ipc.runStat); 
+          if (ipc.runStat==ipc.STATE_COMPLETE) {
+            ipc.destroy();
+            break;
+          }
+          ipc.execShisetsuOut();
         }
       }
       catch(Exception ex) {

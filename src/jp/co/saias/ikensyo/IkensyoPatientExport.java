@@ -39,9 +39,9 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
 
     public IkensyoPatientExport() {
         propertyFile = getPropertyFile(); 
-        dbServer = getProperty("DBConfig/Server");
-        dbPath = getProperty("DBConfig/Path");
-        dbPort = getProperty("DBConfig/Port");
+        dbServer = getProperty("doc/DBConfig/Server");
+        dbPath = getProperty("doc/DBConfig/Path");
+        dbPort = getProperty("doc/DBConfig/Port");
     }
 
     public JDialog  dbUpdate(JButton execBtn,final IkensyoExecTransaction dbexec) throws Exception {
@@ -62,8 +62,7 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
             cancel(); 
           }
           String uri = dbServer + "/" + dbPort + ":" + dbPath;
-          if (dbServer.equals("embedded")) uri = "embedded:"+dbPath;
-          iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
+          iTable = new IkensyoPatientSelect(uri,getProperty("doc/DBConfig/UserName"),getProperty("doc/DBConfig/Password"));
           if (iTable.Rows<0) {
             statMessage(STATE_ERROR,"データベースに接続できません。\n医見書が問題なく起動する状態かどうかご確認ください。");
             if (isMbInPath) new File(dbPath).delete();
@@ -443,10 +442,9 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
 
         String pTable[] = { "PATIENT" ,"COMMON_IKN_SIS" ,"IKN_BILL" 
                            ,"IKN_ORIGIN" ,"SIS_ORIGIN"};
-        String dbUser = getProperty("DBConfig/UserName");
-        String dbPass = getProperty("DBConfig/Password");
+        String dbUser = getProperty("doc/DBConfig/UserName");
+        String dbPass = getProperty("doc/DBConfig/Password");
         String dbUri = dbServer+"/"+dbPort+":"+path;
-       if (dbServer.equals("embedded")) dbUri = "embedded:"+path;
         DngDBAccess dbm = new DngDBAccess("firebird",dbUri,dbUser,dbPass);
         if (!dbm.connect()) {
           statMessage(STATE_ERROR,"書き出し用データベースに接続できません。\nDB:"+dbUri);
@@ -470,8 +468,9 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
     public void finalizeExportDB() {
 
       boolean is20 = false;
-      String dbUser = getProperty("DBConfig/UserName");
-      String dbPass = getProperty("DBConfig/Password");
+      boolean is21 = false;
+      String dbUser = getProperty("doc/DBConfig/UserName");
+      String dbPass = getProperty("doc/DBConfig/Password");
       String dbTmpPath = dbOutPath+".fbak";
       String[] envp= new String[1];
       String gbak;
@@ -501,6 +500,11 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
         quot = "\"";
         gbak = cmd[0]+"\\Firebird\\Firebird_1_5\\bin\\gbak.exe";
         if (! (new File(gbak)).exists()) {
+          gbak = cmd[0]+"\\Firebird\\Firebird_2_0\\bin\\gbak.exe";
+          if (! (new File(gbak)).exists()) {
+            cmd[0] = quot+cmd[0]+"\\Firebird\\Firebird_2_1\\bin\\gbak.exe"+quot;
+            is21 = true;
+          }
           cmd[0] = quot+cmd[0]+"\\Firebird\\Firebird_2_0\\bin\\gbak.exe"+quot;
           is20 = true;
         }
@@ -546,7 +550,7 @@ public class IkensyoPatientExport extends IkensyoPatientImport {
                cmd[1] = "-rep";
                cmd[6] = quot+dbTmpPath+quot;
                cmd[7] = quot+dbOutPath+quot;
-             //}
+            // }
              process = runtime.exec(cmd,null);
              tmpI = process.waitFor();
              if (!osn.equals("Win") && !osn.equals("Mac")) new DngFileUtil().chMod("666",cmd[7]);

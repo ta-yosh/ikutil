@@ -8,10 +8,11 @@
     <pathelement path="lib/iText.jar" />
     <pathelement path="lib/iTextAsian.jar" />
   </path>
+
   <target name="compile"> 
     <delete dir="${ClassDir}" /> 
     <mkdir dir="${ClassDir}" /> 
-    <javac srcdir="src" destdir="${ClassDir}" classpathref="BuildClasspath" nowarn="on" source="1.4"> 
+    <javac srcdir="src" destdir="${ClassDir}" nowarn="on" source="1.4" classpathref="BuildClasspath"> 
       <include name="jp/co/saias/**/*.java" /> 
       <exclude name="jp/co/saias/lib/DngPreviewHtml.java" /> 
     </javac> 

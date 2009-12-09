@@ -7,6 +7,7 @@ import java.awt.GridLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+//import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -39,30 +40,25 @@ public class IkensyoPatientCsvOut extends IkensyoPatientImport {
 
     public IkensyoPatientCsvOut() {
         propertyFile = getPropertyFile(); 
-        dbServer = getProperty("DBConfig/Server");
-        dbPath = getProperty("DBConfig/Path");
-        dbPort = getProperty("DBConfig/Port");
+        dbServer = getProperty("doc/DBConfig/Server");
+        dbPath = getProperty("doc/DBConfig/Path");
+        dbPort = getProperty("doc/DBConfig/Port");
     }
 
     public JDialog  dbUpdate(JButton execBtn,final IkensyoExecTransaction dbexec) throws Exception {
-
+      
       realInPath = dbPath;
       if (dbOutPath==null) {
         fr = (parent!=null) ? new JDialog(parent) : new JDialog();
         fr.setTitle("医見書 患者データユーティリティ");
 
-        if (!checkLocalHost(dbServer)) {
-           cancel(); 
-        }
         contentPane = fr.getContentPane();
         contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.PAGE_AXIS));
         boolean kstat = false;
         while (!kstat) {
-          if (!checkDBPath(dbPath)) {
-            cancel(); 
-          }
           String uri = dbServer + "/" + dbPort + ":" + dbPath;
-          iTable = new IkensyoPatientSelect(uri,getProperty("DBConfig/UserName"),getProperty("DBConfig/Password"));
+          if (dbServer.equals("embedded")) uri = "embedded:"+dbPath;
+          iTable = new IkensyoPatientSelect(uri,getProperty("doc/DBConfig/UserName"),getProperty("doc/DBConfig/Password"));
           if (iTable.Rows<0) {
             statMessage(STATE_ERROR,"データベースに接続できません。\n医見書が問題なく起動する状態かどうかご確認ください。");
             if (isMbInPath) new File(dbPath).delete();
@@ -100,32 +96,67 @@ public class IkensyoPatientCsvOut extends IkensyoPatientImport {
       } 
       else contentPane.removeAll();
 
+      //final KickPDF kick = new KickPDF();
+
       final JButton pdfBtn = new JButton("一覧印刷");
       pdfBtn.setFont(new Font("SanSerif",Font.PLAIN,14));
       final ActionListener pdfOut = new ActionListener() {
         public void actionPerformed(ActionEvent e) {
           String fname = iTable.PDFout();
           if (fname!=null) {
-            File pr = new File(getProperty("Acrobat/Path"));
+            File pr = new File(getProperty("doc/Acrobat/Path"));
             File f = new File(fname);
-            if (!pr.exists() && !System.getProperty("os.name").substring(0,3).equals("Mac")) {
-              statMessage(STATE_ERROR,"PDF設定が不正であるため、印刷できません。医見書本体でPDF設定を確認してください。");
-              f.delete();
-              return;
+/* comment out because this can be used only ver >= jse6.0
+            if (Desktop.isDesktopSupported()) {
+              System.out.println("pdf output using Desktop Default");
+              try {
+                Desktop.getDesktop().open(f);
+              } catch(Exception ex) {
+                statMessage(STATE_ERROR,"PDFが生成できませんでした");
+                f.delete();
+              }
             }
-            String cmd[] = {getProperty("Acrobat/Path"),fname};
-            if ( System.getProperty("os.name").substring(0,3).equals("Mac") ) {
-              cmd[0] = "open";
-            }
-            try {
-              Process ps = Runtime.getRuntime().exec(cmd,null);
-              ps.waitFor();
-              f.delete();
-            } catch (Exception ex) {
-              return;
-            }
+            else {
+*/
+              if (!pr.exists() && !System.getProperty("os.name").substring(0,3).equals("Mac")) {
+                statMessage(STATE_ERROR,"PDF設定が不正であるため、印刷できません。医見書本体でPDF設定を確認してください。");
+                f.delete();
+                return;
+              }
+//              kick.set(getProperty("doc/Acrobat/Path"),fname);
+//              kick.start();
+              String cmd[] = {getProperty("doc/Acrobat/Path"),fname};
+              if ( System.getProperty("os.name").substring(0,3).equals("Mac") ) {
+                cmd[0] = "open";
+              }
+              Process ps = null;
+              try {
+                ps = Runtime.getRuntime().exec(cmd,null);
+              //  if (!System.getProperty("os.name").substring(0,3).equals("Win")) {
+              //    cmd[0] = "sleep";
+              //    cmd[1] = "5";
+              //    ps = Runtime.getRuntime().exec(cmd,null);
+              //    ps.waitFor();
+              //  }
+              } catch (Exception ex) {
+                return;
+              }
+                  InputStream is = ps.getInputStream();
+                  InputStreamReader isr = new InputStreamReader(is);
+                  BufferedReader br = new BufferedReader(isr);
+                  String answer;
+                  is = ps.getErrorStream();
+                  isr = new InputStreamReader(is);
+                  br = new BufferedReader(isr);
+                  try {
+                    while ( (answer = br.readLine()) !=null) {
+                      System.out.println(answer);
+                    }
+                  } catch(IOException ioe) {
+                  }
+              f.deleteOnExit();
+//          }
           }
-          else statMessage(STATE_ERROR,"印刷ドキュメント生成に失敗しました。");
           return;
         }
       };
