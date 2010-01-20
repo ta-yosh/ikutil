@@ -35,7 +35,7 @@ public class IkensyoDBUtilMain {
 
     final IkensyoDBUtilMain idm = new IkensyoDBUtilMain();
     final JFrame fr = new JFrame();
-    fr.setTitle("医見書 患者データユーティリティ Ver2.3");
+    fr.setTitle("医見書 患者データユーティリティ Ver2.4");
     fr.setIconImage(idm.icon);
     final Container contentPane = fr.getContentPane();
     contentPane.setLayout(new BorderLayout());

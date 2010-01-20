@@ -114,6 +114,7 @@ public class IkensyoPatientSelect {
         }
       }
       catch (Exception e) {
+         System.out.println(e);
          Rows--;
       }
     }
@@ -442,7 +443,8 @@ public class IkensyoPatientSelect {
     }
 
     int patientAge(String birthday) {
-       String bd[] = birthday.split("-");
+       String bd[] = birthday.split("[-/]");
+       if (bd.length<3) return -1;
        int yy = Integer.parseInt(bd[0]);
        int mm = Integer.parseInt(bd[1]);
        int dd = Integer.parseInt(bd[2]);
