@@ -450,7 +450,7 @@ public class IkensyoPatientSelect {
        int dd = Integer.parseInt(bd[2]);
        Calendar c = Calendar.getInstance();
        int age = c.get(c.YEAR)-yy; 
-       int mon = c.get(c.MONTH);
+       int mon = c.get(c.MONTH)+1;
        if ((mm-mon) > 0) age--;
        else if (mm==mon && dd - c.get(c.DATE) > 0) age--;
        return age;
